@@ -114,7 +114,7 @@ data "coder_workspace_owner" "me" {}
 
 locals {
   # Strip protocol from the access URL to get the base domain (e.g. "coder.movatic.co")
-  access_url_host = replace(data.coder_workspace.me.access_url, /^https?:\/\//, "")
+  access_url_host = replace(data.coder_workspace.me.access_url, "/^https?:\\/\\//", "")
 
   # Coder subdomain app URL: https://{slug}--{workspace}--{owner}.{host}
   default_origin = "https://${var.slug}--${data.coder_workspace.me.name}--${data.coder_workspace_owner.me.name}.${local.access_url_host}"
