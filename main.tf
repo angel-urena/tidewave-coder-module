@@ -9,7 +9,6 @@ terraform {
   }
 }
 
-data "coder_provisioner" "me" {}
 
 variable "agent_id" {
   type        = string
@@ -104,28 +103,6 @@ variable "libc" {
   }
 }
 
-locals {
-  # Map coder_provisioner arch/os to Tidewave target triples.
-  targets = {
-    linux_amd64  = "x86_64-unknown-linux-${var.libc}"
-    linux_arm64  = "aarch64-unknown-linux-${var.libc}"
-    darwin_amd64 = "x86_64-apple-darwin"
-    darwin_arm64 = "aarch64-apple-darwin"
-  }
-
-  os   = data.coder_provisioner.me.os
-  arch = data.coder_provisioner.me.arch
-  key  = "${local.os}_${local.arch}"
-
-  target = local.targets[local.key]
-
-  download_url = (
-    var.tidewave_version == "latest"
-    ? "https://github.com/tidewave-ai/tidewave_app/releases/latest/download/tidewave-cli-${local.target}"
-    : "https://github.com/tidewave-ai/tidewave_app/releases/download/${var.tidewave_version}/tidewave-cli-${local.target}"
-  )
-}
-
 resource "coder_script" "tidewave" {
   agent_id           = var.agent_id
   display_name       = "Tidewave"
@@ -134,9 +111,9 @@ resource "coder_script" "tidewave" {
   start_blocks_login = true
 
   script = templatefile("${path.module}/scripts/run.sh", {
-    download_url     = local.download_url
     install_dir      = var.install_dir
     tidewave_version = var.tidewave_version
+    libc             = var.libc
     port             = var.port
     log_path         = var.log_path
     debug            = var.debug

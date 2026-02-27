@@ -2,10 +2,40 @@
 set -euo pipefail
 
 # --- Install ---
-DOWNLOAD_URL="${download_url}"
 INSTALL_DIR="${install_dir}"
 VERSION="${tidewave_version}"
+LIBC="${libc}"
 BINARY="$INSTALL_DIR/tidewave"
+
+# Detect platform at runtime (not at Terraform plan time) so the correct
+# binary is downloaded even when the provisioner runs on a different OS/arch
+# than the workspace (e.g. macOS provisioner → Linux Docker workspace).
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+
+case "$OS" in
+  linux)
+    case "$ARCH" in
+      x86_64)  TARGET="x86_64-unknown-linux-$LIBC" ;;
+      aarch64) TARGET="aarch64-unknown-linux-$LIBC" ;;
+      *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+    esac
+    ;;
+  darwin)
+    case "$ARCH" in
+      x86_64)  TARGET="x86_64-apple-darwin" ;;
+      arm64)   TARGET="aarch64-apple-darwin" ;;
+      *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+    esac
+    ;;
+  *) echo "Unsupported OS: $OS"; exit 1 ;;
+esac
+
+if [ "$VERSION" = "latest" ]; then
+  DOWNLOAD_URL="https://github.com/tidewave-ai/tidewave_app/releases/latest/download/tidewave-cli-$TARGET"
+else
+  DOWNLOAD_URL="https://github.com/tidewave-ai/tidewave_app/releases/download/$VERSION/tidewave-cli-$TARGET"
+fi
 
 # If a specific version is pinned, skip download if already installed.
 if [ "$VERSION" != "latest" ] && command -v tidewave >/dev/null 2>&1; then
@@ -14,13 +44,17 @@ if [ "$VERSION" != "latest" ] && command -v tidewave >/dev/null 2>&1; then
     echo "Tidewave $VERSION is already installed, skipping download."
   else
     echo "Tidewave version mismatch (installed: $INSTALLED_VERSION, wanted: $VERSION), upgrading..."
-    curl -fsSL -o "$BINARY" "$DOWNLOAD_URL"
-    chmod +x "$BINARY"
+    TMP_BINARY=$(mktemp)
+    curl -fsSL -o "$TMP_BINARY" "$DOWNLOAD_URL"
+    chmod +x "$TMP_BINARY"
+    sudo mv "$TMP_BINARY" "$BINARY"
   fi
 else
   echo "Downloading Tidewave from $DOWNLOAD_URL..."
-  curl -fsSL -o "$BINARY" "$DOWNLOAD_URL"
-  chmod +x "$BINARY"
+  TMP_BINARY=$(mktemp)
+  curl -fsSL -o "$TMP_BINARY" "$DOWNLOAD_URL"
+  chmod +x "$TMP_BINARY"
+  sudo mv "$TMP_BINARY" "$BINARY"
   echo "Tidewave installed to $BINARY"
   tidewave --version
 fi
