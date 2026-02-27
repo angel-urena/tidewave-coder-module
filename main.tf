@@ -118,8 +118,9 @@ locals {
 
   # Coder subdomain app URL: https://{slug}--{workspace}--{owner}.{host}
   default_origin = "https://${var.slug}--${data.coder_workspace.me.name}--${data.coder_workspace_owner.me.name}.${local.access_url_host}"
+  preview_origin = "https://preview--${data.coder_workspace.me.name}--${data.coder_workspace_owner.me.name}.${local.access_url_host}"
 
-  allowed_origins = var.allowed_origins != null ? var.allowed_origins : [local.default_origin]
+  allowed_origins = var.allowed_origins != null ? var.allowed_origins : [local.default_origin, local.preview_origin]
 }
 
 resource "coder_script" "tidewave" {
