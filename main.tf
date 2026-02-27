@@ -92,6 +92,12 @@ variable "debug" {
   description = "Enable debug logging for Tidewave."
 }
 
+variable "allowed_origins" {
+  type        = list(string)
+  default     = null
+  description = "List of allowed origins for Tidewave. Defaults to the dynamically constructed Coder subdomain URL for this workspace."
+}
+
 variable "libc" {
   type        = string
   default     = "gnu"
@@ -101,6 +107,19 @@ variable "libc" {
     condition     = contains(["gnu", "musl"], var.libc)
     error_message = "libc must be one of: gnu, musl."
   }
+}
+
+data "coder_workspace" "me" {}
+data "coder_workspace_owner" "me" {}
+
+locals {
+  # Strip protocol from the access URL to get the base domain (e.g. "coder.movatic.co")
+  access_url_host = replace(data.coder_workspace.me.access_url, /^https?:\/\//, "")
+
+  # Coder subdomain app URL: https://{slug}--{workspace}--{owner}.{host}
+  default_origin = "https://${var.slug}--${data.coder_workspace.me.name}--${data.coder_workspace_owner.me.name}.${local.access_url_host}"
+
+  allowed_origins = var.allowed_origins != null ? var.allowed_origins : [local.default_origin]
 }
 
 resource "coder_script" "tidewave" {
@@ -117,6 +136,7 @@ resource "coder_script" "tidewave" {
     port             = var.port
     log_path         = var.log_path
     debug            = var.debug
+    allowed_origins  = join(",", local.allowed_origins)
   })
 }
 

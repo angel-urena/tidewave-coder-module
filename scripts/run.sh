@@ -68,7 +68,12 @@ DEBUG="${debug}"
 pkill -f "$BINARY" 2>/dev/null || true
 sleep 0.5
 
+ALLOWED_ORIGINS="${allowed_origins}"
 ARGS="--allow-remote-access --port $PORT"
+
+if [ -n "$ALLOWED_ORIGINS" ]; then
+  ARGS="$ARGS --allowed-origins $ALLOWED_ORIGINS"
+fi
 
 if [ "$DEBUG" = "true" ]; then
   ARGS="$ARGS --debug"
