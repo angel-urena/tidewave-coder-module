@@ -65,7 +65,7 @@ variable "display_name" {
 
 variable "icon" {
   type        = string
-  default     = "/icon/tidewave.svg"
+  default     = "https://tidewave.ai/images/logo.svg"
   description = "The icon for the Tidewave app."
 }
 
