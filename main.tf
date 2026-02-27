@@ -10,7 +10,6 @@ terraform {
 }
 
 data "coder_provisioner" "me" {}
-data "coder_workspace" "me" {}
 
 variable "agent_id" {
   type        = string
@@ -127,31 +126,20 @@ locals {
   )
 }
 
-resource "coder_script" "tidewave_install" {
+resource "coder_script" "tidewave" {
   agent_id           = var.agent_id
-  display_name       = "Install Tidewave"
+  display_name       = "Tidewave"
   icon               = var.icon
   run_on_start       = true
   start_blocks_login = true
 
-  script = templatefile("${path.module}/scripts/install.sh", {
-    download_url = local.download_url
-    install_dir  = var.install_dir
+  script = templatefile("${path.module}/scripts/run.sh", {
+    download_url     = local.download_url
+    install_dir      = var.install_dir
     tidewave_version = var.tidewave_version
-  })
-}
-
-resource "coder_script" "tidewave_start" {
-  agent_id     = var.agent_id
-  display_name = "Start Tidewave"
-  icon         = var.icon
-  run_on_start = true
-
-  script = templatefile("${path.module}/scripts/start.sh", {
-    port     = var.port
-    log_path = var.log_path
-    debug    = var.debug
-    install_dir = var.install_dir
+    port             = var.port
+    log_path         = var.log_path
+    debug            = var.debug
   })
 }
 
