@@ -95,7 +95,13 @@ variable "debug" {
 variable "allowed_origins" {
   type        = list(string)
   default     = null
-  description = "List of allowed origins for Tidewave. Defaults to the dynamically constructed Coder subdomain URL for this workspace."
+  description = "List of allowed origins for Tidewave. Overrides the default Coder subdomain origins when set."
+}
+
+variable "extra_allowed_origins" {
+  type        = list(string)
+  default     = []
+  description = "Additional allowed origins appended to the default Coder subdomain origins."
 }
 
 variable "libc" {
@@ -118,9 +124,11 @@ locals {
 
   # Coder subdomain app URL: https://{slug}--{workspace}--{owner}.{host}
   default_origin = "https://${var.slug}--${data.coder_workspace.me.name}--${data.coder_workspace_owner.me.name}.${local.access_url_host}"
-  preview_origin = "https://preview--${data.coder_workspace.me.name}--${data.coder_workspace_owner.me.name}.${local.access_url_host}"
 
-  allowed_origins = var.allowed_origins != null ? var.allowed_origins : [local.default_origin, local.preview_origin]
+  allowed_origins = concat(
+    var.allowed_origins != null ? var.allowed_origins : [local.default_origin],
+    var.extra_allowed_origins,
+  )
 }
 
 resource "coder_script" "tidewave" {
